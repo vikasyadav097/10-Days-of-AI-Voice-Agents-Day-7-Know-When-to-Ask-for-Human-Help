@@ -1,114 +1,364 @@
 
-# 📞 Day 6 – Make LearnMate Reach Out
+# 🧑‍🏫 Day 7 – Know When to Ask for Human Help
 
-> Turning LearnMate from a voice agent that waits for learners to call into a proactive learning companion that can reach out to them.
+> Teaching LearnMate when it should stop trying to solve everything itself and ask a human for help.
 
 Part of **10 Days of Voice Agents – Voice for Bharat Edition** 🚀
 
----
-
-## 🎯 Day 6 Objective
-
-For Day 6, I extended **LearnMate**, my Learning & Literacy voice assistant, with an outbound calling experience.
-
-Instead of waiting for the learner to open the browser and start a session, LearnMate can proactively reach out to a learner for a scheduled learning or practice session.
+Day 6 made LearnMate proactive by enabling an outbound learning experience.  
+Day 7 focuses on **human escalation** — making LearnMate understand when a learner needs support from a real person.
 
 ---
 
-## 💡 Outbound Use Case
+## 🎯 Day 7 Objective
 
-### Daily Computer Science Practice Call
+For Day 7, I upgraded **LearnMate**, my Learning & Literacy voice assistant, with a human-help escalation system.
 
-A learner can have a preferred practice time.
+LearnMate can now:
 
-For example:
+- 🧠 Recognise situations where AI assistance is not enough
+- 🧑‍🏫 Ask the learner for permission before sharing information
+- 📋 Create a structured escalation request
+- 🆔 Generate a reference ID for the request
+- 🔔 Give the learner a clear next step
+- 🛡️ Avoid sharing unnecessary private information
+
+---
+
+# 🧑‍🏫 When Should LearnMate Ask for Human Help?
+
+For the Learning & Literacy track, I selected two main escalation scenarios.
+
+### 1. Learner Needs a Human Teacher
+
+If a learner says they are unable to understand a topic even after multiple explanations, LearnMate should offer human assistance.
+
+Example:
 
 ```text
-Learner: Vikas
-Practice Time: 7:00 PM
-Subject: Computer Science
+Learner:
+"I still don't understand this topic. Can I talk to a teacher?"
+
+LearnMate:
+"Of course. I can create a request for a teacher to help you.
+Would you like me to share your learning topic and the issue
+you're facing with a teacher?"
 ````
 
-At the scheduled time, LearnMate can initiate an outbound call and say:
+---
+
+### 2. Learner Is Upset or Frustrated
+
+If the learner becomes highly frustrated or asks for human support, LearnMate should not continue forcing the lesson.
+
+Example:
 
 ```text
-Hi Vikas, I'm LearnMate, your learning assistant.
+Learner:
+"I'm getting frustrated. I don't want to continue with AI."
 
-I'm calling because you scheduled your Computer Science
-practice session for this time.
-
-Is this a good time for a quick learning session?
-
-If now isn't a good time, you can end the call.
+LearnMate:
+"I understand. I can create a request for human learning support.
+Would you like me to share a short summary of what you were
+working on with a teacher?"
 ```
-
-If the learner agrees, LearnMate starts a short Computer Science practice session.
 
 ---
 
-## 📞 Outbound Call Flow
+# 🔄 Human Escalation Flow
 
 ```text
-Learner Schedule
-       ↓
-Outbound Call Trigger
-       ↓
-Telephony Service
-       ↓
-LearnMate
-       ↓
-Introduction
-       ↓
-Ask Permission
-       ↓
-Computer Science Question
-       ↓
-Learner Answers
-       ↓
-Gemini
-       ↓
-Murf Falcon
-       ↓
-Voice Response
+Learner
+   │
+   ▼
+Learning Conversation
+   │
+   ▼
+Does the situation require human help?
+   │
+   ├── No ──► Continue Learning
+   │
+   └── Yes
+          │
+          ▼
+   Explain Why Human Help Is Needed
+          │
+          ▼
+   Ask Learner for Permission
+          │
+          ├── No ──► Do Not Create Request
+          │
+          └── Yes
+                 │
+                 ▼
+          Create Escalation
+                 │
+                 ▼
+          Generate Reference ID
+                 │
+                 ▼
+          Show Request to Human
+                 │
+                 ▼
+          Tell Learner What Happens Next
+```
+
+---
+
+# 🛠️ Human Help Tool
+
+LearnMate uses a dedicated function:
+
+```python
+create_escalation()
+```
+
+The tool creates a structured request containing only the information required by the human supporter.
+
+Example:
+
+```json
+{
+  "reference_id": "LM-2026-001",
+  "user_id": "learner_0007",
+  "name": "Vikas",
+  "reason": "Needs help from a human teacher",
+  "topic": "Computer Networks",
+  "summary": "Learner is having difficulty understanding IP addressing.",
+  "urgency": "normal",
+  "language": "English",
+  "follow_up_method": "voice"
+}
+```
+
+---
+
+# 🔐 Permission Before Sharing
+
+LearnMate does **not** automatically send learner information to a human.
+
+Before creating the request, it asks for permission.
+
+Example:
+
+```text
+LearnMate:
+
+"I can create a request for a human teacher.
+
+I would share your name, the topic you're learning,
+and a short summary of the problem.
+
+Would you like me to send this request?"
+```
+
+If the learner says:
+
+```text
+No.
+```
+
+LearnMate does not create the escalation request.
+
+If the learner says:
+
+```text
+Yes.
+```
+
+LearnMate creates the request.
+
+---
+
+# 🆔 Reference ID
+
+After successfully creating an escalation request, LearnMate provides a reference ID.
+
+Example:
+
+```text
+LearnMate:
+
+"Your request has been created successfully.
+
+Your reference ID is LM-2026-001.
+
+A human learning supporter can use this reference
+to follow up with you."
+```
+
+LearnMate does **not** promise an immediate response unless an immediate human response is actually available.
+
+---
+
+# 📋 Human Escalation Summary
+
+The human supporter receives only useful information:
+
+```text
+Reference ID:
+LM-2026-001
+
+Learner:
+Vikas
+
+Reason:
+Needs human teacher assistance
+
+Topic:
+Computer Networks
+
+What happened:
+Learner is having difficulty understanding IP addressing
+after multiple explanations.
+
+What LearnMate checked:
+Basic IP addressing explanation and examples.
+
+Urgency:
+Normal
+
+Language:
+English
+
+Preferred Follow-up:
+Voice
+```
+
+---
+
+# 🛡️ Privacy & Safety
+
+LearnMate follows a minimal-information approach.
+
+### LearnMate CAN share:
+
+* ✅ Learner name
+* ✅ Learning topic
+* ✅ Problem summary
+* ✅ Relevant learning context
+* ✅ Language preference
+* ✅ Preferred follow-up method
+* ✅ Urgency
+
+### LearnMate MUST NOT share:
+
+* ❌ Passwords
+* ❌ OTPs
+* ❌ PINs
+* ❌ Account numbers
+* ❌ Unnecessary personal information
+* ❌ Full conversation history unless specifically required
+
+---
+
+# 🧠 Normal Conversation vs Escalation
+
+### Normal Learning
+
+```text
+Learner:
+"What is an IP address?"
+
+LearnMate:
+"An IP address is a unique address used to identify
+a device on a network. Would you like an example?"
+```
+
+No human help is required.
+
+---
+
+### Escalation Conversation
+
+```text
+Learner:
+"I've tried this several times and I'm still confused.
+I want to talk to a teacher."
+
+LearnMate:
+"I can help create a request for a human teacher.
+Would you like me to share your name, learning topic,
+and a short summary of the problem?"
+```
+
+The escalation tool is called only after permission.
+
+---
+
+# 🏗️ Architecture
+
+```text
+                    LearnMate
+                       │
+                       ▼
+                 Voice Conversation
+                       │
+                       ▼
+                    Gemini
+                       │
+          ┌────────────┴────────────┐
+          │                         │
+   Normal Learning            Human Needed
+          │                         │
+          ▼                         ▼
+ Continue Lesson             Ask Permission
+                                    │
+                           ┌────────┴────────┐
+                           │                 │
+                          No                Yes
+                           │                 │
+                           ▼                 ▼
+                     No Request       create_escalation()
+                                             │
+                                             ▼
+                                      Escalation Store
+                                             │
+                                             ▼
+                                      Human Support
 ```
 
 ---
 
 # 🛠️ Tech Stack
 
-| Component       | Technology                 |
-| --------------- | -------------------------- |
-| Voice Agent     | LiveKit Agents             |
-| Telephony       | Twilio                     |
-| Speech-to-Text  | Deepgram                   |
-| LLM             | Google Gemini              |
-| Text-to-Speech  | Murf Falcon                |
-| Voice Transport | LiveKit                    |
-| Backend         | Python                     |
-| Frontend        | Next.js, React, TypeScript |
-| Styling         | Tailwind CSS               |
+| Component        | Technology                   |
+| ---------------- | ---------------------------- |
+| Voice Agent      | LiveKit Agents               |
+| LLM              | Google Gemini                |
+| Speech-to-Text   | Deepgram                     |
+| Text-to-Speech   | Murf Falcon                  |
+| Human Escalation | Python Function Tool         |
+| Storage          | SQLite / Local Request Store |
+| Backend          | Python                       |
+| Frontend         | Next.js, React, TypeScript   |
+| Styling          | Tailwind CSS                 |
 
 ---
 
 # 📂 Project Structure
 
 ```text
-Day-6-Outbound-LearnMate/
+Day-7-Human-Help-LearnMate/
 │
 ├── backend/
 │   ├── src/
 │   │   ├── agent.py
-│   │   └── outbound_call.py
+│   │   ├── memory.py
+│   │   ├── learning_tools.py
+│   │   └── escalation.py
 │   │
-│   ├── .env.local
+│   ├── data/
+│   │   └── escalations.json
+│   │
 │   ├── .env.example
 │   └── pyproject.toml
 │
 ├── frontend/
 │   ├── app/
 │   ├── components/
+│   ├── hooks/
 │   ├── lib/
-│   ├── public/
 │   └── package.json
 │
 ├── README.md
@@ -117,169 +367,37 @@ Day-6-Outbound-LearnMate/
 
 ---
 
-# ⚙️ Requirements
-
-Before running LearnMate, make sure you have:
-
-* Python 3.10+
-* Node.js 18+
-* pnpm
-* uv
-* LiveKit
-* Git
-
----
-
-# 🔐 Environment Variables
-
-Create your environment file inside the backend:
-
-```text
-backend/.env.local
-```
-
-Add your required API credentials:
-
-```env
-LIVEKIT_URL=
-LIVEKIT_API_KEY=
-LIVEKIT_API_SECRET=
-
-MURF_API_KEY=
-DEEPGRAM_API_KEY=
-GOOGLE_API_KEY=
-
-TWILIO_ACCOUNT_SID=
-TWILIO_AUTH_TOKEN=
-TWILIO_PHONE_NUMBER=
-```
-
-Never upload real API keys to GitHub.
-
----
-
 # ▶️ Running LearnMate
 
-The project uses **three services**:
+Day 7 continues the same frontend and backend architecture used in the previous days.
 
-```text
-LiveKit Server
-      +
-Backend Voice Agent
-      +
-Frontend
-```
+## 1️⃣ Start LiveKit
 
-Run each service in a separate terminal.
-
----
-
-## 1️⃣ Start LiveKit Server
-
-Open **Terminal 1** and go to the LiveKit directory.
-
-For local development:
-
-```powershell
+```bash
 livekit-server.exe --dev
 ```
-
-Keep this terminal running.
 
 ---
 
 ## 2️⃣ Start Backend
 
-Open **Terminal 2**.
-
-Go to the backend directory:
-
-```powershell
+```bash
 cd backend
-```
-
-Install/sync dependencies:
-
-```powershell
 uv sync
-```
-
-Start the LearnMate voice agent:
-
-```powershell
 uv run python src/agent.py dev
 ```
-
-The backend will connect LearnMate to:
-
-```text
-Deepgram → Gemini → Murf Falcon → LiveKit
-```
-
-Keep this terminal running.
 
 ---
 
 ## 3️⃣ Start Frontend
 
-Open **Terminal 3**.
-
-Go to the frontend directory:
-
-```powershell
-cd frontend
-```
-
-Install dependencies:
-
-```powershell
-pnpm install
-```
-
-Start the development server:
-
-```powershell
-pnpm dev
-```
-
-The frontend will normally be available at:
-
-```text
-http://localhost:3000
-```
-
-Open that address in your browser.
-
----
-
-# 🖥️ Complete Local Setup
-
-After starting all three services, your setup should look like:
-
-```text
-Terminal 1
-──────────
-LiveKit Server
-livekit-server.exe --dev
-
-
-Terminal 2
-──────────
-Backend
-cd backend
-uv sync
-uv run python src/agent.py dev
-
-
-Terminal 3
-──────────
-Frontend
+```bash
 cd frontend
 pnpm install
 pnpm dev
 ```
 
-Then open:
+Open:
 
 ```text
 http://localhost:3000
@@ -287,135 +405,83 @@ http://localhost:3000
 
 ---
 
-# 🧪 Testing the Outbound Learning Experience
+# 🧪 Day 7 Testing Checklist
 
-The complete flow should be tested using a phone number controlled by the developer.
+### Test 1 — Normal Conversation
 
-### Test Flow
+* ✅ Start LearnMate
+* ✅ Ask a normal Computer Science question
+* ✅ Agent answers normally
+* ✅ No escalation request is created
 
-```text
-1. Configure the learner's phone number
-             ↓
-2. Trigger the outbound call
-             ↓
-3. Phone rings
-             ↓
-4. LearnMate introduces itself
-             ↓
-5. LearnMate explains why it is calling
-             ↓
-6. Learner accepts the session
-             ↓
-7. LearnMate asks a Computer Science question
-             ↓
-8. Learner answers
-             ↓
-9. LearnMate evaluates the answer
-             ↓
-10. LearnMate provides feedback
-             ↓
-11. Learner ends the call
-```
+### Test 2 — Human Teacher Request
 
----
+* ✅ Tell LearnMate that you need a human teacher
+* ✅ Agent recognises the escalation condition
+* ✅ Agent explains what information will be shared
+* ✅ Agent asks for permission
+* ✅ Say "Yes"
+* ✅ Escalation request is created
+* ✅ Reference ID is generated
 
-# 🗣️ Example Conversation
+### Test 3 — Permission Denied
 
-### 📞 LearnMate
+* ✅ Trigger human escalation
+* ✅ Agent asks for permission
+* ✅ Say "No"
+* ✅ No escalation request is created
 
-```text
-Hi Vikas, I'm LearnMate, your learning assistant.
+### Test 4 — Frustrated Learner
 
-I'm calling for your scheduled Computer Science
-practice session.
-
-Is this a good time for a quick question?
-```
-
-### 👤 Learner
-
-```text
-Yes, let's do it.
-```
-
-### 🤖 LearnMate
-
-```text
-Great.
-
-Here's your question:
-
-What does IP stand for in computer networking?
-```
-
-### 👤 Learner
-
-```text
-Internet Protocol.
-```
-
-### 🤖 LearnMate
-
-```text
-Correct!
-
-IP stands for Internet Protocol.
-
-Would you like another question?
-```
+* ✅ Express frustration with the lesson
+* ✅ Agent responds calmly
+* ✅ Agent offers human support
+* ✅ Permission is requested before sharing information
 
 ---
 
-# 🛡️ Responsible Outbound Calling
+# 🎥 Day 7 Demo
 
-Because the learner did not initiate the call, LearnMate should:
+The demonstration shows the complete escalation workflow:
 
-* ✅ Identify itself immediately
-* ✅ Explain why it is calling
-* ✅ Ask whether the learner wants to continue
-* ✅ Respect the learner's decision to end the call
-* ✅ Keep the session short
-* ✅ Avoid repeatedly calling someone who does not want calls
-* ❌ Never pretend to be a human
-* ❌ Never pressure the learner to continue
+1. 🎙️ Learner starts a conversation with LearnMate
+2. 🧠 LearnMate identifies that human help is required
+3. 🧑‍🏫 LearnMate explains why escalation is appropriate
+4. 🔐 LearnMate asks for permission
+5. ✅ Learner approves the request
+6. 🛠️ `create_escalation()` is triggered
+7. 🆔 A reference ID is generated
+8. 📋 Human support can view the request
+9. 📞 LearnMate explains the next step to the learner
 
----
-
-# 🎥 Day 6 Demo
-
-The Day 6 demonstration shows:
-
-1. 📱 Phone receiving the outbound call
-2. 🤖 LearnMate introducing itself
-3. 📚 Explaining the reason for the call
-4. 🧠 Starting a Computer Science practice question
-5. 🎙️ Learner answering through voice
-6. 🔊 LearnMate responding using Murf Falcon
-7. 📞 Ending the outbound session
+A second test demonstrates a normal conversation where **no escalation request is created**.
 
 ---
 
 # 🚀 What I Built
 
-For Day 6, I extended LearnMate into a more proactive learning companion.
+For Day 7, I taught LearnMate an important lesson:
 
-Instead of requiring learners to manually open the application every time, the outbound experience allows LearnMate to reach out for a scheduled Computer Science practice session.
+**An AI agent doesn't have to solve everything itself.**
 
-The goal is to make voice-based learning more accessible, consistent, and engaging.
+LearnMate can now recognise when a learner needs human assistance, ask for permission before sharing information, create a structured support request, and provide a reference ID.
+
+This makes the learning experience more responsible while keeping the learner in control of their information.
 
 ---
 
 # 🔮 Future Improvements
 
-* 📅 Personalised learning schedules
-* 🧠 Adaptive difficulty
-* 📊 Progress-based reminders
-* 🌐 Multi-language outbound calls
-* 📚 Subject-specific practice
-* 🔁 Automatic rescheduling
-* 📈 Learning analytics
 * 👨‍🏫 Teacher dashboard
-* 🔐 Learner call preferences
+* 🔔 Real-time notifications for teachers
+* 📧 Email escalation
+* 💬 Slack/Discord notifications
+* 📊 Escalation analytics
+* 📝 Teacher response tracking
+* 🧠 Better frustration detection
+* 🌐 Multi-language human support
+* 🔐 Learner request history
+* 📱 Mobile learning support
 
 ---
 
@@ -439,9 +505,9 @@ Built as part of **10 Days of Voice Agents – Voice for Bharat Edition** 🇮�
 
 Powered by:
 
-**Murf Falcon • LiveKit • Deepgram • Gemini • Twilio • Next.js**
+**Murf Falcon • LiveKit • Deepgram • Gemini • Next.js • Python**
 
-#10DaysofAIVoiceAgents #MurfFalcon #VoiceForBharat #MurfAI #VoiceAI #GenerativeAI #LearningAndLiteracy #ComputerScience #AI #LiveKit #Deepgram #Gemini #Twilio
+#10DaysofAIVoiceAgents #MurfFalcon #VoiceForBharat #MurfAI #VoiceAI #GenerativeAI #LearningAndLiteracy #ComputerScience #AI #LiveKit #Deepgram #Gemini
 
 ```
 ```
