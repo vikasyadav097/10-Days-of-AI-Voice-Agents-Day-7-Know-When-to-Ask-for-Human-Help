@@ -32,14 +32,23 @@ load_dotenv(".env.local")
 
 
 # ============================================================
-# DAY 4 – LEARNMATE MEMORY
+#   LEARNMATE MEMORY
+#   Simple JSON-file-based persistence for learner profiles.
+#   No database needed — this is a lightweight key-value store
+#   keyed by learner name, used across sessions to recognize
+#   returning learners and resume their progress.
 # ============================================================
 
 MEMORY_FILE = Path(__file__).parent / "learner_memory.json"
 
 
 def load_memory() -> dict:
-    """Load learner memory from the local JSON file."""
+    """Load learner memory from the local JSON file.
+
+    Returns an empty learners list if the file is missing or
+    corrupted, so the agent can always fall back gracefully
+    instead of crashing on startup.
+    """
 
     if not MEMORY_FILE.exists():
         return {"learners": []}
@@ -49,12 +58,19 @@ def load_memory() -> dict:
             return json.load(file)
 
     except (json.JSONDecodeError, OSError):
+        # File exists but is unreadable/corrupt (bad JSON, permissions,
+        # etc.) — log it and continue with a fresh, empty memory store
+        # rather than letting the whole agent crash.
         logger.warning("Could not read learner memory.")
         return {"learners": []}
 
 
 def write_memory(data: dict) -> None:
-    """Save learner memory to the local JSON file."""
+    """Save learner memory to the local JSON file.
+
+    Overwrites the file with the full, current in-memory dataset
+    (indent=2 keeps it human-readable for debugging).
+    """
 
     with open(MEMORY_FILE, "w", encoding="utf-8") as file:
         json.dump(
@@ -67,6 +83,11 @@ def write_memory(data: dict) -> None:
 
 # ============================================================
 # LEARNMATE SYSTEM PROMPT
+# The full persona + behavior contract for the tutor agent.
+# Everything below (identity, teaching style, memory rules,
+# guardrails, escalation flow) is defined here in plain
+# instructions rather than in code, so behavior can be tuned
+# without touching the Python logic.
 # ============================================================
 
 SYSTEM_PROMPT = """
@@ -232,7 +253,7 @@ Do not force the learner to use a particular language.
 
 
 ============================================================
-DAY 4 – LEARNER MEMORY
+– LEARNER MEMORY
 ============================================================
 
 You have access to two memory functions:
@@ -463,6 +484,9 @@ What would you like to learn today?"
 
 # ============================================================
 # LEARNMATE AGENT
+# The Agent subclass LiveKit instantiates for each session.
+# Wires the SYSTEM_PROMPT persona to the two function tools
+# below (learner lookup/save) that the LLM can call mid-conversation.
 # ============================================================
 
 class Assistant(Agent):
@@ -536,7 +560,8 @@ class Assistant(Agent):
         """
 
         # ----------------------------------------------------
-        # Privacy check
+        # Privacy check — refuse to persist anything unless the
+        # LLM has confirmed the learner explicitly said yes.
         # ----------------------------------------------------
 
         if not permission_to_save:
@@ -555,7 +580,8 @@ class Assistant(Agent):
             }
 
         # ----------------------------------------------------
-        # Load existing memory
+        # Load existing memory so we can merge into it instead
+        # of overwriting other learners' saved records.
         # ----------------------------------------------------
 
         data = load_memory()
@@ -572,7 +598,9 @@ class Assistant(Agent):
         name_lower = name.strip().lower()
 
         # ----------------------------------------------------
-        # Update existing learner
+        # If this learner already has a record, merge the new
+        # fields into it (spread + overwrite) instead of adding
+        # a duplicate entry.
         # ----------------------------------------------------
 
         for index, learner in enumerate(
@@ -607,7 +635,8 @@ class Assistant(Agent):
                 }
 
         # ----------------------------------------------------
-        # Add new learner
+        # No existing record matched — this is a first-time
+        # learner, so append a brand-new entry.
         # ----------------------------------------------------
 
         data.setdefault("learners", []).append(
@@ -632,6 +661,8 @@ class Assistant(Agent):
 
 # ============================================================
 # LIVEKIT SERVER
+# Entry point that LiveKit's CLI/worker uses to register and
+# run this agent.
 # ============================================================
 
 server = AgentServer()
@@ -639,6 +670,9 @@ server = AgentServer()
 
 # ============================================================
 # PREWARM
+# Runs once per worker process before any jobs are handled, so
+# the (relatively slow) VAD model is loaded ahead of time and
+# reused across sessions instead of reloading it per call.
 # ============================================================
 
 def prewarm(proc: JobProcess):
@@ -651,6 +685,8 @@ server.setup_fnc = prewarm
 
 # ============================================================
 # LIVEKIT AGENT SESSION
+# Called once per incoming room/job — builds the voice pipeline
+# and starts the tutoring session for that participant.
 # ============================================================
 
 @server.rtc_session(agent_name="my-agent")
@@ -673,6 +709,7 @@ async def my_agent(ctx: JobContext):
 
         # ----------------------------------------------------
         # Speech-to-Text
+        # Deepgram converts the learner's spoken audio to text.
         # ----------------------------------------------------
 
         stt=deepgram.STT(
@@ -681,6 +718,8 @@ async def my_agent(ctx: JobContext):
 
         # ----------------------------------------------------
         # Large Language Model
+        # Gemini generates LearnMate's replies based on the
+        # SYSTEM_PROMPT and the ongoing conversation.
         # ----------------------------------------------------
 
         llm=google.LLM(
@@ -689,6 +728,8 @@ async def my_agent(ctx: JobContext):
 
         # ----------------------------------------------------
         # Text-to-Speech
+        # Murf turns the LLM's text reply back into natural
+        # speech audio using an Indian-English voice.
         # ----------------------------------------------------
 
         tts=murf.TTS(
@@ -703,6 +744,9 @@ async def my_agent(ctx: JobContext):
         # ----------------------------------------------------
         # Voice Activity Detection
         # + Turn Detection
+        # Decides when the learner has started/stopped speaking
+        # and when it's the agent's turn to respond, across
+        # multiple languages.
         # ----------------------------------------------------
 
         turn_detection=MultilingualModel(),
@@ -711,6 +755,8 @@ async def my_agent(ctx: JobContext):
 
         # ----------------------------------------------------
         # Generate responses while waiting for end of turn
+        # Lets the LLM start drafting a reply before the
+        # learner has fully finished speaking, to cut latency.
         # ----------------------------------------------------
 
         preemptive_generation=True,
@@ -718,6 +764,9 @@ async def my_agent(ctx: JobContext):
 
     # ========================================================
     # START VOICE SESSION
+    # Attaches the Assistant persona to this session and joins
+    # the LiveKit room, picking noise cancellation tuned for
+    # SIP (telephony) vs. regular WebRTC participants.
     # ========================================================
 
     await session.start(
@@ -750,8 +799,9 @@ async def my_agent(ctx: JobContext):
 
 # ============================================================
 # RUN APPLICATION
+# Standard LiveKit CLI bootstrap — starts the worker process
+# that listens for and dispatches jobs to my_agent().
 # ============================================================
 
 if __name__ == "__main__":
     cli.run_app(server)
-    
